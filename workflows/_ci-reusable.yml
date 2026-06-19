@@ -69,8 +69,11 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          export ENTRA_CLIENT_ID=$(yq '.global.entra.clientId' Helm/values-dev.yaml)
-          export ENTRA_TENANT_ID=$(yq '.global.azure.tenantId' Helm/values-dev.yaml)
+          # Fetch variables from external Helm repo using PAT
+          git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/Noel-Mathews-Org/FlowForge-Helm.git helm-repo-tmp
+          export ENTRA_CLIENT_ID=$(yq '.global.entra.clientId' helm-repo-tmp/values-dev.yaml)
+          export ENTRA_TENANT_ID=$(yq '.global.azure.tenantId' helm-repo-tmp/values-dev.yaml)
+          rm -rf helm-repo-tmp
           
           docker build \
             --build-arg NEXT_PUBLIC_ENTRA_CLIENT_ID=$ENTRA_CLIENT_ID \
@@ -99,14 +102,17 @@ jobs:
       - name: Push to GHCR
         run: docker push ghcr.io/${{ steps.repo.outputs.name }}/${{ inputs.service_name }}:${{ steps.vars.outputs.short_sha }}
 
-      - name: Update values-dev.yaml and Push
+      - name: Update values-dev.yaml in FlowForge-Helm
         run: |
-          git pull --rebase origin Cloud-Track-dev
-          yq eval ".\"${{ inputs.service_name }}\".image.tag = \"${{ steps.vars.outputs.short_sha }}\"" -i Helm/values-dev.yaml
+          git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/Noel-Mathews-Org/FlowForge-Helm.git helm-repo
+          cd helm-repo
+          git checkout Cloud-Track-dev
+          
+          yq eval ".\"${{ inputs.service_name }}\".image.tag = \"${{ steps.vars.outputs.short_sha }}\"" -i values-dev.yaml
           
           git config user.name "FlowForge Dev Pipeline"
           git config user.email "devops@flowforge.com"
-          git add Helm/values-dev.yaml
+          git add values-dev.yaml
           git commit -m "chore(gitops): update ${{ inputs.service_name }} to ${{ steps.vars.outputs.short_sha }} in dev" || echo "No changes"
           git push origin Cloud-Track-dev
 

@@ -95,6 +95,9 @@ jobs:
         run: |
           # Fetch variables from external Helm repo using PAT
           git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/Noel-Mathews-Org/FlowForge-Helm.git helm-repo-tmp
+          cd helm-repo-tmp
+          git checkout ${{ github.ref_name }} || git checkout main
+          cd ..
           export ENTRA_CLIENT_ID=$(yq '.global.entra.clientId' helm-repo-tmp/Helm/values-dev.yaml)
           export ENTRA_TENANT_ID=$(yq '.global.azure.tenantId' helm-repo-tmp/Helm/values-dev.yaml)
           rm -rf helm-repo-tmp

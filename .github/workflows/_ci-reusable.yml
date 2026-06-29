@@ -34,7 +34,6 @@ on:
         required: true
 permissions:
   contents: write
-  packages: write
   id-token: write
 
 jobs:
@@ -49,10 +48,6 @@ jobs:
       - name: Set Variables
         id: vars
         run: echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
-      - name: Lowercase Repository Name
-        id: repo
-        run: echo "name=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@master
